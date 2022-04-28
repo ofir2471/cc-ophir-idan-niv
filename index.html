@@ -1,0 +1,40 @@
+<html>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col">
+
+                <h1>Upload an image</h1>
+                <hr>
+
+                <form action="/entry" method="POST" enctype="multipart/form-data">
+
+                    <div class="form-group">
+                        <label>Select image</label>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" name="plate" id="image">
+                            <label class="custom-file-label" for="plate">Select image...</label>
+                        </div>
+                    </div>
+                    <input type="text" name="parkingLot">
+                    <br>
+                    <br>
+                    <button type="submit" class="btn btn-primary">Hi</button>
+                </form>
+
+                <form action="/exit" method="POST" enctype="multipart/form-data">
+
+                    <input type="text" name="ticketId">
+                    <br>
+                    <br>
+                    <button type="submit" class="btn btn-primary">Bye</button>
+                </form>
+
+
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
