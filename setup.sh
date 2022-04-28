@@ -76,6 +76,3 @@ ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@
     nohup flask run --host 0.0.0.0  &>/dev/null &
     exit
 EOF
-
-echo "test that it all worked"
-curl --retry-connrefused --retry 10 --retry-delay 1 http://$PUBLIC_IP:5000
