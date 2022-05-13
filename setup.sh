@@ -20,8 +20,60 @@ aws ec2 create-security-group   \
 
 # figure out my ip
 MY_IP=$(curl ipinfo.io/ip)
-echo "My IP: $MY_IP"
+# debug
+# set -o xtrace
 
+KEY_NAME="cloud-course-`date +'%N'`"
+KEY_PEM="$KEY_NAME.pem"
+
+echo "creating dynamodb instance ParkingLotDB..."
+aws dynamodb create-table \
+    --table-name ParkingLotDB \
+    --attribute-definitions \
+        AttributeName=TicketId,AttributeType=S \
+    --key-schema \
+        AttributeName=TicketId,KeyType=HASH \
+    --provisioned-throughput \
+        ReadCapacityUnits=1,WriteCapacityUnits=1 \
+    --table-class STANDARD
+
+echo "Waiting for dynamodb creation..."
+aws dynamodb describe-table --table-name ParkingLotDB | grep TableStatus
+
+echo "Setting autoscaling..."
+aws application-autoscaling register-scalable-target \
+    --service-namespace dynamodb \
+    --resource-id "table/ParkingLotDB" \
+    --scalable-dimension "dynamodb:table:WriteCapacityUnits" \
+    --min-capacity 1 \
+    --max-capacity 10
+aws application-autoscaling register-scalable-target \
+    --service-namespace dynamodb \
+    --resource-id "table/ParkingLotDB" \
+    --scalable-dimension "dynamodb:table:ReadCapacityUnits" \
+    --min-capacity 1 \
+    --max-capacity 10
+aws application-autoscaling describe-scalable-targets \
+    --service-namespace dynamodb \
+    --resource-id "table/ParkingLotDB"
+
+echo "create key pair $KEY_PEM to connect to instances and save locally"
+aws ec2 create-key-pair --key-name $KEY_NAME \
+    | jq -r ".KeyMaterial" > $KEY_PEM
+
+# secure the key pair
+chmod 400 $KEY_PEM
+
+SEC_GRP="my-sg-`date +'%N'`"
+
+echo "setup firewall $SEC_GRP"
+aws ec2 create-security-group   \
+    --group-name $SEC_GRP       \
+    --description "Access my instances" 
+
+# figure out my ip
+MY_IP=$(curl ipinfo.io/ip)
+echo "My IP: $MY_IP"
 
 echo "setup rule allowing SSH access to $MY_IP only"
 aws ec2 authorize-security-group-ingress        \
@@ -76,3 +128,4 @@ ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@
     nohup flask run --host 0.0.0.0  &>/dev/null &
     exit
 EOF
+
